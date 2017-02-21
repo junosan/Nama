@@ -1,0 +1,83 @@
+[[[ Data structure ]]]
+
+[[ Hai ]]
+Each Hai is an int (2 bytes used)
+0~33: HAI_1M ~ HAI_CHUN
+An empty hai is HAI_EMPTY (HAI_EMPTY != 0)
+
+34~62 (internal): reserved
+63: HAI_EMPTY
+7th bit is used to flag hai from the kawa (e.g. when you call chi/pon/minkan) or richi hai in the kawa
+8th bit is used to flag akadora
+9th bit (internal) is used to flag transparent hai
+
+
+
+[[ Te ]] (per player)
+int te[IND_TESIZE]; (IND_TESIZE == 17)
+Stores 14 hai's and state vectors
+[0~12]: tehai
+[13]: tsumohai (IND_TSUMOHAI)
+[14]: naki state (IND_NAKISTATE)
+[15] (internal): store yaku flags (IND_YAKUFLAGS)
+[16] (internal): store yakuman flags (IND_YAKUMANFLAGS)
+
+If there are naki's, following slots are reserved for those naki's
+[1~3]: 3rd naki
+[4~6]: 2nd naki
+[7~9]: 1st naki
+[10~12]: 0th naki
+
+[IND_NAKISTATE] is (:)/(3/3/3/3)/(1/3) bit int
+(:): FLAG_TE_AGARIHOUKI/FLAG_TE_IPPATSU/FLAG_TE_DAIICHITSUMO/FLAG_TE_FURITEN/FLAG_TE_DOUBLERICHI/FLAG_TE_RICHI
+(3/3/3/3): which kind 3rd/2nd/1st/0th naki is (NAKI_NO_NAKI/NAKI_PON/NAKI_CHI/NAKI_ANKAN/NAKI_DAIMINKAN/NAKI_KAKAN)
+(1/3): (FLAG_TE_NOT_MENZEN)/(# of naki)
+
+nNaki = te[IND_NAKISTATE] & MASK_TE_NNAKI
+
+kan's are treated as 3 hais in te, but just displayed as 4
+
+
+
+[[ Hairi ]]
+hairi is always performed with 13 - 3 * nNaki number of hais
+hairi is grouped into 20 ints per entry
+
+[0~12]: te with hais grouped in triples (shuntsu, kotsu), doubles (toitsu, ryanmen, kanchan), or singles in the order listed
+If there are naki's, those hais are NOT included here (i.e. only concealed hais are subject to hairi)
+[13]: intentionally left unused
+[14~19]: form of each group from the left
+(always sorted in the order FORM_SHUNTSU, FORM_KOTSU, FORM_TOITSU, FORM_RYANMEN, FORM_KANCHAN, FORM_TANKI)
+Max 6 groups possible in any te. If there are 6 doubles, the last FORM_TANKI is implied next, but not stored
+
+There will be multiple entries if there are multiple ways of interpreting the te in achieving the lowest shanten
+i-th entry can be accessed via (hairi + i * IND_HAIRISIZE)[#]
+[IND_NHAIRI]: used to store how many entries there are
+
+
+
+[[ Kawa ]]
+int kawa[IND_KAWASIZE] (per player)
+
+For i-th player, the j-th hai in the kawa is (kawa + i * IND_KAWASIZE)[j]
+[IND_NKAWA]: stores the total number of hais in each player's kawa
+
+
+
+[[ Machi ]]
+int machi[IND_MACHISIZE] (per player)
+
+[0~33]: corresponds to HAI_1M~HAI_CHUN; non-zero value means the hai reduces shanten (i.e. at tenpai, they are agari-hais)
+[IND_NSHANTEN]: stores nShanten; 0 means tenpai, 1 means 1-shanten, etc.
+
+
+
+[[ Yama ]]
+First 136 ints are the hais in the yama
+[IND_NYAMA]: stores # of hais left in the yama including wanpai (i.e. begins with 136 right after shipai)
+Total number of tsumo left is yama[IND_NYAMA] - 14 - nKan
+
+[1,0,3,2]: rinshanpai (in that order)
+[5,7,9,11,13]: dora hyoujihai
+[4,6,8,10,12]: uradora
+
